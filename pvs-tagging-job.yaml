@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pvc-tag-updater
+  namespace: devops
+  labels:
+    app.kubernetes.io/name: pvc-tag-updater
+    app.kubernetes.io/component: devops
+    app.kubernetes.io/instance: devops
+spec:
+  concurrencyPolicy: Forbid
+  schedule: "0 0 * * *" 
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: pvc-tag-updater
+            app.kubernetes.io/component: devops
+            app.kubernetes.io/instance: devops
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: pvs-tagging 
+          containers:
+            - name: pvc-tag-updater
+              image: "857556598075.dkr.ecr.us-west-1.amazonaws.com/plivo/pvs-tagging-script:pvs-tagging"
+              imagePullPolicy: Always
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 100Mi
+              env:
+                - name: AWS_REGION
+                  value: "us-west-1"
+              args:
+                - "python"
+                - "/app/pvs-tagging-script.py"
+          nodeSelector:
+            ops.plivo.com/dedicated-for: devops
+          tolerations:
+            - key: ops.plivo.com/dedicated-for
+              value: devops
